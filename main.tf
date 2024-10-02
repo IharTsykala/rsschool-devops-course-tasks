@@ -12,17 +12,23 @@ provider "aws" {
 }
 
 resource "aws_iam_role" "GithubActionsRole" {
-  name               = "GithubActionsRole"
+  name = "GithubActionsRole"
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
-  "Statement": {
+  "Statement": [{
     "Effect": "Allow",
     "Principal": {
-      "Federated": "arn:aws:iam::aws:policy/OIDC"
+      "Federated": "arn:aws:iam::851725512813:oidc-provider/token.actions.githubusercontent.com"
     },
-    "Action": "sts:AssumeRoleWithWebIdentity"
-  }
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:sub": "repo:IharTsykala/rsschool-devops-course-tasks:ref:refs/heads/main"
+      }
+    }
+  }]
 }
 EOF
 }

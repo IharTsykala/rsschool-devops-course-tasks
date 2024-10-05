@@ -32,19 +32,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+
+      # Шаг для проверки OIDC-токена
+      - name: Get OIDC Token
+        id: oidc-token-step
+        run: |
+          echo "Requesting OIDC Token..."
+          echo ${{ steps.oidc-token-step.outputs.token }}
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ secrets.ACTIONS_ID_TOKEN_REQUEST_URL }}
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ secrets.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+
+      - name: Print OIDC Token
+        run: |
+          echo "OIDC Token: ${{ secrets.ACTIONS_ID_TOKEN_REQUEST_URL }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Установка AWS credentials с использованием OIDC
       - name: Set AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          role-to-assume: arn:aws:iam::851725512813:role/GithubActionsRole
           aws-region: eu-central-1
           audience: sts.amazonaws.com
-      - name: Debug Environment Variables
-        run: |
-          echo "AWS_ROLE_TO_ASSUME=$AWS_ROLE_TO_ASSUME"
-          echo "AWS_REGION=$AWS_REGION"
-          echo "Audience=$AUDIENCE"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Terraform Init
         run: terraform init
+
       - name: Terraform Plan
         run: terraform plan
 
@@ -60,7 +79,7 @@ jobs:
       - name: Set AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
           aws-region: eu-central-1
           audience: sts.amazonaws.com
       - name: Terraform Init

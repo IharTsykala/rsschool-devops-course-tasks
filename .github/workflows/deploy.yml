@@ -21,6 +21,9 @@ jobs:
 
   terraform-plan:
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_STEP_DEBUG: true
+      ACTIONS_RUNNER_DEBUG: true
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
@@ -29,11 +32,14 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           role-to-assume: arn:aws:iam::851725512813:role/GithubActionsRole
           aws-region: eu-central-1
           audience: sts.amazonaws.com
+      - name: Debug Environment Variables
+        run: |
+          echo "AWS_ROLE_TO_ASSUME=$AWS_ROLE_TO_ASSUME"
+          echo "AWS_REGION=$AWS_REGION"
+          echo "Audience=$AUDIENCE"
       - name: Terraform Init
         run: terraform init
       - name: Terraform Plan
@@ -42,6 +48,9 @@ jobs:
   terraform-apply:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    env:
+      ACTIONS_STEP_DEBUG: true
+      ACTIONS_RUNNER_DEBUG: true
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
@@ -50,8 +59,6 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           role-to-assume: arn:aws:iam::851725512813:role/GithubActionsRole
           aws-region: eu-central-1
           audience: sts.amazonaws.com

@@ -33,6 +33,7 @@ jobs:
 #          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           role-to-assume: arn:aws:iam::851725512813:role/GithubActionsRole
           aws-region: eu-central-1
+          audience: sts.amazonaws.com
       - name: Terraform Init
         run: terraform init
       - name: Terraform Plan
@@ -53,6 +54,7 @@ jobs:
 #          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           role-to-assume: arn:aws:iam::851725512813:role/GithubActionsRole
           aws-region: eu-central-1
+          audience: sts.amazonaws.com
       - name: Terraform Init
         run: terraform init
       - name: Terraform Apply

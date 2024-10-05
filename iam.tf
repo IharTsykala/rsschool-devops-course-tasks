@@ -12,7 +12,6 @@ resource "aws_iam_role" "GithubActionsRole" {
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
       "StringEquals": {
-        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
         "token.actions.githubusercontent.com:sub": "${var.repository}"
       }
     }

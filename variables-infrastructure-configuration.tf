@@ -32,3 +32,11 @@ variable "az_2" {
   description = "Second availability zone"
   default     = "us-east-1b"
 }
+
+variable "bastion_ami" {
+  default = "ami-0c55b159cbfafe1f0"
+}
+
+variable "bastion_instance_type" {
+  default = "t3.micro"
+}

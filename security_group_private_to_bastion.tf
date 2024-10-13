@@ -1,17 +1,14 @@
-resource "aws_security_group" "bastion_sg" {
-  name   = "bastion-sg"
+resource "aws_security_group" "security_group_private_to_bastion" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    description = "Allow SSH from all"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [aws_subnet.public_subnet_1.cidr_block]
   }
 
   egress {
-    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -19,6 +16,6 @@ resource "aws_security_group" "bastion_sg" {
   }
 
   tags = {
-    Name = "bastion-security-group"
+    Name = "security_group_private_to_bastion"
   }
 }

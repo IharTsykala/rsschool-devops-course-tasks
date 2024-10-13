@@ -1,12 +1,12 @@
-resource "aws_eip" "nat_eip" {
-  domain = "vpc"
-}
-
 resource "aws_instance" "nat_instance" {
-  ami                         = "ami-0c55b159cbfafe1f0"
-  instance_type               = "t3.micro"
-  subnet_id                   = aws_subnet.public_subnet_1.id
-  associate_public_ip_address = true
+  ami           = "ami-0df0e7600ad0913a9"
+  instance_type = "t3.micro"
+  #  subnet_id     = aws_subnet.public_subnet_1.id
+
+  network_interface {
+    network_interface_id = aws_network_interface.nat_eni.id
+    device_index         = 0
+  }
 
   user_data = <<-EOF
     #!/bin/bash

@@ -23,7 +23,6 @@ resource "aws_instance" "k3s_instance" {
 
               sudo ln -s /usr/local/bin/k3s /usr/bin/kubectl
 
-              kubectl get nodes
               EOF
 
   tags = {

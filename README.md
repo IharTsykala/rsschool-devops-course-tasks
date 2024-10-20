@@ -62,7 +62,7 @@ Defines the GitHub Actions workflow for deployment using Terraform.
 
 ---
 
-# Task 2: Basic Infrastructure Configuration
+## Task 2: Basic Infrastructure Configuration
 
 In this task, we configure a **VPC** with **public and private subnets**, a **NAT instance**, a **Bastion host**, security groups, and route tables to ensure connectivity between the private and public resources. This configuration allows private instances to access the internet via the NAT instance while remaining isolated from public access.
 
@@ -123,9 +123,65 @@ Provides important outputs such as VPC ID, public IPs, and instance IDs.
    ```
 
 3. **Verify Setup**
-    - Ensure the Bastion host is accessible via SSH.
-    - Verify that private instances can reach the internet through the NAT instance.
-    - Check that route tables, security groups, and NACLs are correctly associated.
+   - Ensure the Bastion host is accessible via SSH.
+   - Verify that private instances can reach the internet through the NAT instance.
+   - Check that route tables, security groups, and NACLs are correctly associated.
+
+---
+
+## Task 3: Kubernetes Cluster Deployment and Workload Management
+
+In this task, we deploy a **K3s** Kubernetes cluster on an AWS EC2 instance and manage workloads using `kubectl`. The objective is to create a lightweight Kubernetes cluster and deploy a simple workload (Nginx).
+
+---
+
+### Project File Structure (Task 3)
+
+#### **k3s_instance.tf**
+Defines the EC2 instance for deploying the K3s cluster, including user data for installing K3s and deploying an Nginx workload.
+
+---
+
+## How to Run Task 3
+
+1. **Initialize Terraform**  
+   Run the following command to initialize the project:
+
+   ```bash
+   terraform init
+   ```
+
+2. **Plan and Apply Configuration**  
+   Use the following commands to plan and apply the infrastructure:
+
+   ```bash
+   terraform plan
+   terraform apply
+   ```
+
+3. **Verify K3s Deployment**
+   - Connect to the EC2 instance running K3s (the Bastion host):
+     ```bash
+     ssh -i ~/.ssh/bastion_key ubuntu@<BASTION_PUBLIC_IP>
+     ```
+
+   - From the Bastion host, check the status of the K3s cluster:
+     ```bash
+     sudo kubectl get nodes
+     ```
+
+   - Deploy a simple workload:
+     ```bash
+     sudo kubectl apply -f https://k8s.io/examples/pods/simple-pod.yaml
+     ```
+
+   - Verify that the workload is running:
+     ```bash
+     sudo kubectl get pods --all-namespaces
+     ```
+
+4. **Access the Workload**  
+   You can access the Nginx server by using the internal IP of the Kubernetes pod.
 
 ---
 
@@ -154,4 +210,6 @@ The following outputs will be displayed after applying the configuration:
 
 ## Summary
 
-This Terraform project provides a comprehensive infrastructure configuration for AWS. The project ensures that private instances can securely access the internet via a NAT instance and can be managed through a Bastion host. The use of NACLs, security groups, and route tables ensures controlled access to the network and resources.
+This Terraform project provides a comprehensive infrastructure configuration for AWS. The project ensures that private instances can securely access the internet via a NAT instance and can be managed through a Bastion host. The use of NACLs, security groups, and route tables ensures controlled access to the network and resources. Additionally, it allows for the deployment of a K3s cluster to manage Kubernetes workloads effectively.
+
+---

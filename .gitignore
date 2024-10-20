@@ -1,7 +1,7 @@
 .idea/
-
 .terraform/
 
 .terraform.lock.hcl
 
 cert.pem
+key_pair.pem

@@ -40,3 +40,8 @@ variable "bastion_ami" {
 variable "bastion_instance_type" {
   default = "t3.micro"
 }
+
+variable "key_pair_name" {
+  description = "Name of the AWS key pair for SSH access"
+  default     = "key_pair_ihar-tsykala"
+}

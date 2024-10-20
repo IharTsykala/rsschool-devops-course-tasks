@@ -33,6 +33,17 @@ resource "aws_network_acl_rule" "http_inbound" {
   egress         = false
 }
 
+resource "aws_network_acl_rule" "ephemeral_ports_inbound" {
+  network_acl_id = aws_network_acl.network_acls_public.id
+  rule_number    = 120
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = "0.0.0.0/0"
+  from_port      = 1024
+  to_port        = 65535
+  egress         = false
+}
+
 resource "aws_network_acl_rule" "all_outbound" {
   network_acl_id = aws_network_acl.network_acls_public.id
   rule_number    = 100

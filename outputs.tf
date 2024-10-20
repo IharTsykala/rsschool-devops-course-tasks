@@ -18,13 +18,13 @@ output "bastion_instance_id" {
   value = aws_instance.bastion_instance.id
 }
 
-output "nat_instance_id" {
-  value = aws_instance.nat_instance.id
-}
-
-output "private_instance_id" {
-  value = aws_instance.private_instance_to_nat.id
-}
+# output "nat_instance_id" {
+#   value = aws_instance.nat_instance.id
+# }
+#
+# output "private_instance_id" {
+#   value = aws_instance.private_instance_to_nat.id
+# }
 
 output "k3s_master_public_ip" {
   value       = aws_instance.k3s_instance.public_ip

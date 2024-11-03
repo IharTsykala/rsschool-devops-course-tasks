@@ -5,3 +5,6 @@
 
 cert.pem
 key_pair.pem
+
+traefik-rbac.yaml
+get_helm.sh

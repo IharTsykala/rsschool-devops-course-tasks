@@ -9,21 +9,20 @@ resource "aws_instance" "k3s_instance" {
   ]
 
   user_data = <<-EOF
-              #!/bin/bash
+    #!/bin/bash
 
-              sudo amazon-linux-extras enable selinux-ng
-              sudo yum clean metadata
-              sudo yum install -y selinux-policy-targeted
+    sudo amazon-linux-extras enable selinux-ng
+    sudo yum clean metadata
+    sudo yum install -y selinux-policy-targeted
+    sudo yum install -y container-selinux
 
-              sudo yum install -y container-selinux
+    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
-              curl -sfL https://get.k3s.io | sh -
+    curl -sfL https://get.k3s.io | sh -s - server --tls-san $${PUBLIC_IP}
 
-              sudo /usr/local/bin/k3s kubectl get nodes
-
-              sudo ln -s /usr/local/bin/k3s /usr/bin/kubectl
-
-              EOF
+    sudo /usr/local/bin/k3s kubectl get nodes
+    sudo ln -s /usr/local/bin/k3s /usr/bin/kubectl
+  EOF
 
   tags = {
     Name = "k3s_instance"

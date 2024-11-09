@@ -1,0 +1,19 @@
+wordpress:
+  image:
+    repository: wordpress
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+mysql:
+  image:
+    repository: mysql
+    tag: 5.7
+  rootPassword: "rootpassword"
+  database: "wordpress"
+  user: "wpuser"
+  password: "password"
+
+ingress:
+  enabled: false

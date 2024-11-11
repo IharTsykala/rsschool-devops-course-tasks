@@ -1,6 +1,6 @@
 resource "aws_instance" "k3s_instance" {
   ami           = var.bastion_ami
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
   subnet_id     = aws_subnet.public_subnet_1.id
   key_name      = var.key_pair_name
 

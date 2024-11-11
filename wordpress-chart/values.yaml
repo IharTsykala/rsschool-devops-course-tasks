@@ -1,19 +1,27 @@
+namespace: my-namespace
+
 wordpress:
-  image:
-    repository: wordpress
-    tag: latest
+  image: "wordpress:latest"
+  replicaCount: 1
   service:
-    type: ClusterIP
     port: 80
+    nodePort: 32000
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  persistentVolume:
+    size: 5Gi
 
 mysql:
-  image:
-    repository: mysql
-    tag: 5.7
-  rootPassword: "rootpassword"
-  database: "wordpress"
-  user: "wpuser"
-  password: "password"
-
-ingress:
-  enabled: false
+  enabled: true
+  image: "mysql:5.7"
+  rootPassword: "root_password"
+  database: "wp_db"
+  user: "wp_user"
+  password: "wp_password"
+  persistentVolume:
+    size: 5Gi

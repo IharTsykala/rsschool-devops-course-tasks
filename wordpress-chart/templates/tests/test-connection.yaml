@@ -9,5 +9,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['-qO-', 'http://{{ .Release.Name }}-wordpress:{{ .Values.wordpress.service.port }}']
+      args: ['-qO-', 'http://{{ .Release.Name }}-wordpress:80']
   restartPolicy: Never

@@ -1,4 +1,4 @@
-name: Terraform Deployment
+name: WordPress Deployment
 
 permissions:
   id-token: write
@@ -13,49 +13,68 @@ on:
       - main
 
 jobs:
-  terraform-check:
+  terraform:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the code
       - uses: actions/checkout@v2
+
+      # Setup Terraform
       - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.9.5
-      - name: Format Code
-        run: terraform fmt -check
 
-  terraform-plan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.11
+      # Configure AWS Credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
+
+      # Initialize Terraform to download providers
       - name: Terraform Init
         run: terraform init
+
+      # Format and Validate Terraform Configuration
+      - name: Terraform Format and Validate
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out=tfplan
 
-  terraform-apply:
+      # Terraform Apply (only for pushes to main)
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+  helm-deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    needs: terraform
     steps:
+      # Checkout the code
       - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.9.5
+
+      # Install Helm
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      # Configure AWS Credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
-      - name: Terraform Init
-        run: terraform init
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+
+      # Deploy WordPress using Helm
+      - name: Deploy WordPress with Helm
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami || true
+          helm repo update || true
+          kubectl create namespace my-namespace || true
+          helm upgrade --install my-wordpress bitnami/wordpress --namespace my-namespace || true

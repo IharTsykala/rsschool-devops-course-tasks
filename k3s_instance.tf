@@ -1,6 +1,6 @@
 resource "aws_instance" "k3s_instance" {
   ami           = var.bastion_ami
-  instance_type = var.bastion_instance_type
+  instance_type = "t3.small"
   subnet_id     = aws_subnet.public_subnet_1.id
   key_name      = var.key_pair_name
 
@@ -11,18 +11,13 @@ resource "aws_instance" "k3s_instance" {
   user_data = <<-EOF
               #!/bin/bash
 
+              # K3s installation script with required dependencies
               sudo amazon-linux-extras enable selinux-ng
               sudo yum clean metadata
-              sudo yum install -y selinux-policy-targeted
-
-              sudo yum install -y container-selinux
+              sudo yum install -y selinux-policy-targeted container-selinux
 
               curl -sfL https://get.k3s.io | sh -
-
-              sudo /usr/local/bin/k3s kubectl get nodes
-
               sudo ln -s /usr/local/bin/k3s /usr/bin/kubectl
-
               EOF
 
   tags = {

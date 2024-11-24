@@ -4,6 +4,7 @@ terraform/.terraform/
 terraform/.terraform.lock.hcl
 
 cert.pem
+terraform/key_pair_open_ssl.pem
 terraform/key_pair.pem
 
 traefik-rbac.yaml

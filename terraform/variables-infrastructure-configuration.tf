@@ -34,5 +34,5 @@ variable "key_pair_name" {
 
 variable "jenkins_ami" {
   description = "AMI ID for Jenkins server"
-  default     = "ami-0df0e7600ad0913a9"
+  default     = "ami-002b01b90a9ddf6f4"
 }

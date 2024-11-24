@@ -12,5 +12,10 @@ output "k3s_master_public_ip" {
 }
 
 output "jenkins_public_ip" {
-  value = aws_instance.k3s_instance.public_ip
+  value       = aws_instance.jenkins_instance.public_ip
+  description = "Public IP of the Jenkins instance"
+}
+
+output "kubeconfig_path" {
+  value = "/etc/rancher/k3s/k3s.yaml"
 }

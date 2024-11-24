@@ -2,6 +2,8 @@ resource "aws_security_group" "jenkins_security_group" {
   name        = "jenkins_security_group"
   description = "Allow access to Jenkins"
 
+  vpc_id = aws_vpc.main.id
+
   ingress {
     from_port   = 8080
     to_port     = 8080

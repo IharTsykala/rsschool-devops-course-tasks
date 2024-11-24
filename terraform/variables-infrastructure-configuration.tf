@@ -13,16 +13,6 @@ variable "public_subnet_2_cidr" {
   default     = "10.0.2.0/24"
 }
 
-variable "private_subnet_1_cidr" {
-  description = "CIDR block for the first private subnet"
-  default     = "10.0.3.0/24"
-}
-
-variable "private_subnet_2_cidr" {
-  description = "CIDR block for the second private subnet"
-  default     = "10.0.4.0/24"
-}
-
 variable "az_1" {
   description = "First availability zone"
   default     = "eu-central-1a"
@@ -33,12 +23,8 @@ variable "az_2" {
   default     = "eu-central-1b"
 }
 
-variable "bastion_ami" {
+variable "k3s_master_ami" {
   default = "ami-0df0e7600ad0913a9"
-}
-
-variable "bastion_instance_type" {
-  default = "t3.micro"
 }
 
 variable "key_pair_name" {

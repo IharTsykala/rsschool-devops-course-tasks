@@ -4,8 +4,6 @@ resource "aws_subnet" "public_subnet_1" {
   availability_zone       = var.az_1
   map_public_ip_on_launch = true
 
-  #  network_acl_id = aws_network_acl.network_acls_public.id
-
   tags = {
     Name = "public-subnet-1"
   }
@@ -16,8 +14,6 @@ resource "aws_subnet" "public_subnet_2" {
   cidr_block              = var.public_subnet_2_cidr
   availability_zone       = var.az_2
   map_public_ip_on_launch = true
-
-  #  network_acl_id = aws_network_acl.network_acls_public.id
 
   tags = {
     Name = "public-subnet-2"

@@ -31,3 +31,8 @@ variable "key_pair_name" {
   description = "Name of the AWS key pair for SSH access"
   default     = "key_pair_ihar-tsykala"
 }
+
+variable "jenkins_ami" {
+  description = "AMI ID for Jenkins server"
+  default     = "ami-0df0e7600ad0913a9"
+}

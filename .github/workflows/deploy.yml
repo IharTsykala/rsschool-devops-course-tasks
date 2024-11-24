@@ -1,0 +1,125 @@
+name: Deploy Infrastructure and Trigger Jenkins Pipeline
+
+on:
+  push:
+    branches:
+      - task-6/application-deployment-via-jenkins-pipeline
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.5
+
+      - name: Initialize Terraform
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Check Terraform Format
+        working-directory: ./terraform
+        run: terraform fmt -check
+
+  validate:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.5
+
+      - name: Initialize Terraform
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Validate Terraform
+        working-directory: ./terraform
+        run: terraform validate
+
+  plan:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.5
+
+      - name: Initialize Terraform
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Generate Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -out=tfplan
+
+      - name: Show Terraform Plan
+        working-directory: ./terraform
+        run: terraform show -json tfplan > tfplan.json
+
+      - name: Upload Plan File
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan
+          path: ./terraform/tfplan.json
+
+#  deploy:
+#    runs-on: ubuntu-latest
+#    needs: plan
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#
+#      - name: Set up Terraform
+#        uses: hashicorp/setup-terraform@v2
+#        with:
+#          terraform_version: 1.9.5
+#
+#      - name: Initialize Terraform
+#        working-directory: ./terraform
+#        run: terraform init
+#
+#      - name: Apply Terraform
+#        working-directory: ./terraform
+#        run: terraform apply -auto-approve
+#
+#      - name: Fetch Jenkins Public IP
+#        id: jenkins_ip
+#        run: |
+#          echo "JENKINS_IP=$(terraform output -raw jenkins_public_ip)" >> $GITHUB_ENV
+#
+#      - name: Fetch Jenkins API Token
+#        run: |
+#          ssh -o StrictHostKeyChecking=no -i ./terraform/key_pair.pem ec2-user@${{ env.JENKINS_IP }} "cat /home/ec2-user/jenkins_credentials.txt" > jenkins_credentials.txt
+#          export JENKINS_USER=$(grep 'JENKINS_USER' jenkins_credentials.txt | cut -d '=' -f2)
+#          export JENKINS_API_TOKEN=$(grep 'JENKINS_API_TOKEN' jenkins_credentials.txt | cut -d '=' -f2)
+#        env:
+#          AWS_REGION: eu-central-1
+#
+#      - name: Add API Token to GitHub Secrets
+#        run: |
+#          gh secret set JENKINS_API_TOKEN --body "$JENKINS_API_TOKEN"
+#          gh secret set JENKINS_USER --body "$JENKINS_USER"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Trigger Jenkins Pipeline
+#        run: |
+#          curl -X POST "http://${{ env.JENKINS_IP }}:8080/job/task-6-pipeline/build" \
+#          --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}"

@@ -1,4 +1,4 @@
-name: Deploy Infrastructure and Trigger Jenkins Pipeline
+name: Deploy Infrastructure and check helm and prometheus
 
 on:
   push:
@@ -105,24 +105,3 @@ jobs:
       - name: Apply Terraform
         working-directory: ./terraform
         run: terraform apply -auto-approve
-
-      - name: Fetch Terraform Outputs
-        working-directory: ./terraform
-        run: |
-          echo "Fetching Terraform Outputs..."
-          K8S_IP=$(terraform output -raw k8s_master_public_ip)
-          echo "K8S_IP=$K8S_IP" >> $GITHUB_ENV
-      
-
-      - name: Wait for Kubernetes to Initialize
-        run: |
-          echo "Waiting for Kubernetes to initialize..."
-          sleep 180    
-
-      - name: Test SSH Connection
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ./key_pair.pem ec2-user@${{ env.K8S_IP }} "echo 'SSH Connection Successful'" || {
-            echo "Error: SSH connection failed.";
-            exit 1;
-          }
-

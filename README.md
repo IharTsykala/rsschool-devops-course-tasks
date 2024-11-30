@@ -1,217 +1,160 @@
 
-# Jenkins Pipeline and Kubernetes Deployment Project
+# Kubernetes and Monitoring Deployment Project on AWS EC2
 
-## **Overview**
+## Task: Deploy Kubernetes and Prometheus on AWS EC2 with Automation Script
 
-This project automates the deployment of an application to a Kubernetes (K8s) cluster using Jenkins and Helm, with Docker images stored in AWS Elastic Container Registry (ECR). The infrastructure is provisioned using Terraform, and the pipeline ensures code quality with SonarQube analysis and unit tests.
-
----
-
-## **Pipeline Objectives**
-
-1. **Automate Infrastructure Deployment**  
-   - Use Terraform to provision AWS resources, including a Kubernetes cluster and a Jenkins server.
-   - Store Terraform state in a secure backend.
-
-2. **Docker Image Management**  
-   - Build Docker images for the application.
-   - Push Docker images to AWS Elastic Container Registry (ECR).
-
-3. **Kubernetes Deployment**  
-   - Use Helm to deploy the application to a Kubernetes cluster.
-   - Verify the deployment by checking pod readiness and service availability.
-
-4. **Pipeline Configuration**  
-   - Store the Jenkins pipeline as a `Jenkinsfile` in the main repository.
-   - Trigger the pipeline on each Git push.
-
-5. **Code Quality and Testing**  
-   - Execute unit tests during the pipeline.
-   - Perform a security check using SonarQube.
-
-6. **Notifications and Documentation**  
-   - Notify via email about the pipeline status (success or failure).
-   - Document the pipeline and deployment process.
+In this project, we deploy a Kubernetes cluster on AWS EC2 using kubeadm, set up a monitoring solution with Prometheus, and expose Prometheus using a NodePort service. This guide walks you through the configuration, execution, and verification steps for successful deployment.
 
 ---
 
-## **File Structure**
+### Project File Structure
 
-### **Project Root**
+#### User-Data Script: `kubernetes_prometheus_deploy.sh`
+This script automates the installation and configuration of Kubernetes, Docker, Helm, and Prometheus on an Amazon Linux 2 instance.
 
-- **`.github/workflows/deploy.yml`**  
-  - GitHub Actions workflow for initializing Terraform and triggering Jenkins.
-
-- **`Jenkinsfile`**  
-  - Defines the Jenkins pipeline with steps for building, testing, and deploying the application.
-
----
-
-### **Infrastructure (`terraform/`)**
-
-#### **Files**
-- **`main.tf`**  
-  Configures AWS resources and the backend for Terraform state.
-
-- **`jenkins_instance.tf`**  
-  Provisions an EC2 instance with Jenkins pre-installed and configured.
-
-- **`k3s_instance.tf`**  
-  Deploys a K3s Kubernetes cluster on an EC2 instance.
-
-- **`outputs.tf`**  
-  Outputs necessary information such as the Jenkins public IP.
-
-- **`security_group_*.tf`**  
-  Configures security groups for Kubernetes, Jenkins, and other resources.
+- **Purpose:** 
+  - Initialize a Kubernetes cluster using `kubeadm`.
+  - Install Docker, Helm, and Kubernetes tools.
+  - Deploy Prometheus in a monitoring namespace.
+  - Configure NodePort to expose Prometheus to external traffic.
 
 ---
 
-### **Application (`app/`)**
+### How to Run
 
-#### **Files**
-- **`Dockerfile`**  
-  Defines the Docker image for the application.
+#### Prerequisites
+1. **AWS Account:** Ensure you have an AWS account and appropriate permissions to launch EC2 instances.
+2. **Key Pair:** Create a key pair in AWS to connect to the EC2 instance if needed.
+3. **Security Groups:** Ensure the required ports (e.g., 22, 31000) are open for SSH and Prometheus access.
+4. **IAM Role:** Attach an IAM role with permissions for EC2 and networking tasks to your instance.
 
-- **`package.json`**  
-  Contains dependencies and scripts for running and testing the application.
+#### Steps to Execute
 
-- **`src/`**  
-  Source code of the application.
-
----
-
-### **Helm Chart (`helm-chart/`)**
-
-#### **Files**
-- **`Chart.yaml`**  
-  Metadata for the Helm chart.
-
-- **`values.yaml`**  
-  Configurable values such as Docker image repository and service ports.
-
-- **`templates/`**  
-  Templates for Kubernetes manifests, including Deployment and Service.
-
----
-
-## **Pipeline Steps**
-
-### **1. Application Build**
-- **Purpose:** Build the application and ensure all dependencies are installed.
-- **Command:**  
-  ```bash
-  npm install
-  ```
-
-### **2. Unit Test Execution**
-- **Purpose:** Run unit tests to ensure application correctness.
-- **Command:**  
-  ```bash
-  npm test
-  ```
-
-### **3. Security Check with SonarQube**
-- **Purpose:** Analyze the codebase for vulnerabilities and ensure code quality.
-- **Command:**  
-  ```bash
-  sonar-scanner -Dsonar.projectKey=my-app -Dsonar.sources=./src
-  ```
-
-### **4. Docker Image Building and Pushing to ECR**
-- **Purpose:** Build a Docker image for the application and push it to AWS ECR.
-- **Command:**  
-  ```bash
-  docker build -t <repository-uri>:<tag> .
-  docker push <repository-uri>:<tag>
-  ```
-
-### **5. Deployment to K8s Cluster with Helm**
-- **Purpose:** Deploy the application using Helm to the Kubernetes cluster.
-- **Command:**  
-  ```bash
-  helm upgrade --install my-app helm-chart --set image.repository=<repository-uri> --set image.tag=<tag>
-  ```
-
-### **6. Application Verification**
-- **Purpose:** Verify that the application is running and accessible.
-- **Command:**  
-  ```bash
-  kubectl wait --for=condition=ready pod -l app=my-app --timeout=120s
-  curl http://<service-ip>:3000
-  ```
-
-### **7. Notifications**
-- **Purpose:** Send email notifications for pipeline success or failure.
-
----
-
-## **How to Run**
-
-### **1. Clone the Repository**
-```bash
-git clone https://github.com/rsschool-devops-course-tasks.git
-cd rsschool-devops-course-tasks
-```
-
-### **2. Deploy Infrastructure**
-```bash
-cd terraform
-terraform init
-terraform apply -auto-approve
-```
-
-### **3. Trigger Jenkins Pipeline**
-- The Jenkins pipeline is automatically triggered on each push to the repository.
-
-### **4. Verify Deployment**
-- Ensure that the application is running:
-  ```bash
-  kubectl get pods
-  kubectl get svc my-app
-  ```
-
----
-
-## **Notifications**
-
-Email notifications are sent to `ihartsykala24@gmail.com` upon pipeline completion.
-
----
-
-## **Documentation**
-
-1. **Helm Chart Validation**
-   - Run the following command to validate the Helm chart locally:
+1. **Launch an EC2 Instance:**
+   - Use Amazon Linux 2 AMI.
+   - Add a script to `User data` during instance configuration:
      ```bash
-     helm template my-app ./helm-chart
+     #!/bin/bash
+     curl -o kubernetes_prometheus_deploy.sh https://example.com/path/to/kubernetes_prometheus_deploy.sh
+     bash kubernetes_prometheus_deploy.sh
+     ```
+2. **Access Logs:**
+   - Check `/var/log/user-data.log` for detailed script execution logs.
+
+3. **Verify Kubernetes Deployment:**
+   - Connect to the EC2 instance:
+     ```bash
+     ssh -i <key.pem> ec2-user@<public-ip>
+     ```
+   - Check the status of the Kubernetes cluster:
+     ```bash
+     kubectl get nodes
      ```
 
-2. **SonarQube Setup**
-   - Configure SonarQube in Jenkins and use the `sonar-scanner` CLI for analysis.
-
-3. **ECR Access**
-   - Ensure Kubernetes nodes can access the ECR repository by assigning the appropriate IAM role to instances.
+4. **Verify Prometheus Deployment:**
+   - Retrieve the public IP of your EC2 instance and verify Prometheus:
+     - URL: `http://<EC2_PUBLIC_IP>:31000`
 
 ---
 
-## **Outputs**
+### Script Breakdown
 
-After deployment, the following information is available:
-- **Jenkins Public IP:** Access the Jenkins UI at `http://<jenkins-public-ip>:8080`.
-- **Kubernetes Service IP:** The application is available at `http://<service-ip>:3000`.
+#### **`kubernetes_prometheus_deploy.sh`**
+
+**Key Features:**
+- **Docker Installation:**
+  - Installs Docker and starts the Docker service.
+  - Ensures Docker is enabled on boot.
+  
+- **Kubernetes Setup:**
+  - Installs `kubeadm`, `kubectl`, and `kubelet`.
+  - Initializes a single-node Kubernetes cluster with `kubeadm`.
+  - Applies Weave Net as the CNI.
+
+- **Helm Installation:**
+  - Installs Helm (v3) for managing Kubernetes applications.
+
+- **Prometheus Deployment:**
+  - Creates a namespace for monitoring.
+  - Deploys Prometheus using Helm from the Bitnami chart repository.
+  - Exposes Prometheus via a NodePort service on port 31000.
+
+- **Logging and Error Handling:**
+  - Logs all actions and errors to `/var/log/user-data.log`.
+
+**Dependencies Installed:**
+- Docker
+- Kubernetes tools (kubeadm, kubectl, kubelet)
+- Helm (v3)
 
 ---
 
-## **Cleanup**
+### Script Execution Flow
 
-To remove all resources, run:
-```bash
-terraform destroy
-```
+1. **Locale Setup:** Fixes locale-related issues on the EC2 instance.
+2. **System Update:** Updates the system and installs required dependencies.
+3. **Docker Installation:** Installs and configures Docker for Kubernetes.
+4. **Kubernetes Tools Installation:** Installs kubeadm, kubectl, and kubelet.
+5. **Cluster Initialization:** Sets up a Kubernetes cluster using `kubeadm`.
+6. **CNI Configuration:** Installs Weave Net for pod networking.
+7. **Helm Installation:** Installs Helm for Kubernetes application management.
+8. **Prometheus Deployment:**
+   - Creates a namespace (`monitoring`).
+   - Deploys Prometheus using Helm.
+   - Configures NodePort service for external access.
+9. **Logging:** Logs detailed output for debugging and verification.
 
 ---
 
-## **Summary**
+### How to Verify Deployment
 
-This project demonstrates a fully automated CI/CD pipeline for deploying an application to Kubernetes using Jenkins, Terraform, Docker, and Helm. With email notifications and thorough application verification, this setup ensures reliability and transparency in the deployment process.
+1. **Check Cluster Nodes:**
+   - Ensure the Kubernetes cluster is initialized:
+     ```bash
+     kubectl get nodes
+     ```
+
+2. **Verify Prometheus Deployment:**
+   - Check that Prometheus pods are running:
+     ```bash
+     kubectl get pods -n monitoring
+     ```
+   - Verify that Prometheus is accessible:
+     - Open `http://<EC2_PUBLIC_IP>:31000` in your browser.
+
+3. **Troubleshooting:**
+   - If the script fails, check logs:
+     ```bash
+     cat /var/log/user-data.log
+     ```
+
+---
+
+### Cleanup
+
+To clean up all resources:
+1. Terminate the EC2 instance.
+2. Remove any associated resources like security groups, key pairs, or IAM roles.
+
+---
+
+### Summary
+
+This project automates the deployment of Kubernetes and Prometheus on AWS EC2. By leveraging the `kubeadm` and Helm tools, it ensures a streamlined setup process for monitoring workloads. The script provides robust logging for easy debugging and simplifies access to Prometheus with a NodePort service.
+
+**Key Benefits:**
+- Automates Kubernetes and Prometheus setup.
+- Provides a lightweight monitoring solution.
+- Simplifies access and configuration.
+
+---
+
+### Outputs Example
+
+After the setup, you should see:
+- **Kubernetes Cluster Status:**
+  ```bash
+  NAME    STATUS   ROLES    AGE   VERSION
+  master  Ready    master   5m    v1.26.0
+  ```
+- **Prometheus URL:** `http://<EC2_PUBLIC_IP>:31000`

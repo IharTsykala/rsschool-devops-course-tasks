@@ -15,7 +15,7 @@ resource "aws_iam_role" "K8sRole" {
   })
 }
 
-resource "aws_iam_instance_profile" "K3sProfile" {
+resource "aws_iam_instance_profile" "K8sProfile" {
   name = "K3sProfile"
   role = aws_iam_role.K8sRole.name
 }

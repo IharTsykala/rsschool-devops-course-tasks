@@ -23,16 +23,11 @@ variable "az_2" {
   default     = "eu-central-1b"
 }
 
-variable "k3s_master_ami" {
+variable "k8s_master_ami" {
   default = "ami-0df0e7600ad0913a9"
 }
 
 variable "key_pair_name" {
   description = "Name of the AWS key pair for SSH access"
   default     = "key_pair_ihar-tsykala"
-}
-
-variable "jenkins_ami" {
-  description = "AMI ID for Jenkins server"
-  default     = "ami-002b01b90a9ddf6f4"
 }

@@ -3,7 +3,7 @@ name: Deploy Infrastructure and Trigger Jenkins Pipeline
 on:
   push:
     branches:
-      - task-6/application-deployment-via-jenkins-pipeline
+      - task-7/prometheus-deployment-on-k8s
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -106,86 +106,23 @@ jobs:
         working-directory: ./terraform
         run: terraform apply -auto-approve
 
-      # Step 4: Fetch Terraform Outputs
       - name: Fetch Terraform Outputs
         working-directory: ./terraform
         run: |
           echo "Fetching Terraform Outputs..."
-          JENKINS_IP=$(terraform output -raw jenkins_public_ip)
-          K8S_IP=$(terraform output -raw k3s_master_public_ip)
-          KUBECONFIG_PATH=$(terraform output -raw kubeconfig_path)
-          
-          echo "JENKINS_IP=$JENKINS_IP" >> $GITHUB_ENV
+          K8S_IP=$(terraform output -raw k8s_master_public_ip)
           echo "K8S_IP=$K8S_IP" >> $GITHUB_ENV
-          echo "KUBECONFIG_PATH=$KUBECONFIG_PATH" >> $GITHUB_ENV
-          echo "Fetched Jenkins IP: $JENKINS_IP, Kubernetes IP: $K8S_IP, Kubeconfig Path: $KUBECONFIG_PATH" 
+      
 
-#      - name: Fetch Jenkins Public IP
-#        working-directory: ./terraform
-#        run: |
-#          JENKINS_IP=$(terraform output -raw jenkins_public_ip)
-#          if [ -z "$JENKINS_IP" ]; then
-#            echo "Error: Failed to fetch Jenkins Public IP"
-#            exit 1
-#          fi
-#          echo "JENKINS_IP=$JENKINS_IP" >> $GITHUB_ENV
-#          echo "Fetched Jenkins IP: $JENKINS_IP"
-
-      - name: Wait for Jenkins to Initialize
-        run: sleep 180
+      - name: Wait for Kubernetes to Initialize
+        run: |
+          echo "Waiting for Kubernetes to initialize..."
+          sleep 180    
 
       - name: Test SSH Connection
-        run: ssh -o StrictHostKeyChecking=no -i ./key_pair.pem ec2-user@${{ env.JENKINS_IP }} "echo 'SSH Connection Successful'"
-
-      - name: Fetch Jenkins Credentials
         run: |
-          for i in {1..30}; do
-            echo "Attempt $i: Checking for Jenkins credentials..."
-            if ssh -o StrictHostKeyChecking=no -i ./key_pair.pem ec2-user@${{ env.JENKINS_IP }} "ls /home/ec2-user/jenkins_credentials.txt"; then
-              ssh -o StrictHostKeyChecking=no -i ./key_pair.pem ec2-user@${{ env.JENKINS_IP }} "cat /home/ec2-user/jenkins_credentials.txt" > jenkins_credentials.txt
-              break
-            fi
-            sleep 15
-          done
-
-          export JENKINS_USER=$(grep 'JENKINS_USER' jenkins_credentials.txt | cut -d '=' -f2)
-          export JENKINS_API_TOKEN=$(grep 'JENKINS_API_TOKEN' jenkins_credentials.txt | cut -d '=' -f2)
-          echo "JENKINS_USER=$JENKINS_USER" >> $GITHUB_ENV
-          echo "JENKINS_API_TOKEN=$JENKINS_API_TOKEN" >> $GITHUB_ENV  
-
-      - name: Fetch Kubernetes Kubeconfig
-        run: |
-          echo "Fetching kubeconfig file from Kubernetes server..."
-          ssh -i ./key_pair.pem -o StrictHostKeyChecking=no ec2-user@${{ env.K8S_IP }} "sudo cat /etc/rancher/k3s/k3s.yaml" > kubeconfig
-          sed -i "s/127.0.0.1/${{ env.K8S_IP }}/g" kubeconfig
-          echo "KUBECONFIG_FILE=kubeconfig" >> $GITHUB_ENV
-          echo "Kubeconfig updated with Kubernetes public IP."
-
-#      - name: Fetch CSRF Crumb from Jenkins
-#        id: fetch_crumb
-#        run: |
-#          CRUMB=$(curl -s -u "${{ env.JENKINS_USER }}:${{ env.JENKINS_API_TOKEN }}" "http://${{ env.JENKINS_IP }}:8080/crumbIssuer/api/json" | jq -r '.crumb')
-#          echo "CRUMB=$CRUMB" >> $GITHUB_ENV
-#          if [ -z "$CRUMB" ]; then
-#            echo "Failed to fetch Jenkins crumb."
-#            exit 1
-#          fi
-
-#      - name: Trigger Jenkins Pipeline
-#        run: |
-#          echo "Triggering Jenkins pipeline..."
-#          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://${{ env.JENKINS_IP }}:8080/job/task-6-pipeline/build" \
-#              -u "${{ env.JENKINS_USER }}:${{ env.JENKINS_API_TOKEN }}" \
-#              -H "Jenkins-Crumb:${{ env.CRUMB }}")
-#
-#          if [ "$RESPONSE" -ne 201 ]; then
-#            echo "Failed to trigger Jenkins pipeline. Response code: $RESPONSE"
-#            exit 1
-#          fi
-#          echo "Jenkins pipeline triggered successfully."
-
-      - name: Trigger Jenkins Pipeline
-        run: |
-          curl -X POST "http://${{ env.JENKINS_IP }}:8080/job/task-6-pipeline/build" \
-          --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}"
+          ssh -o StrictHostKeyChecking=no -i ./key_pair.pem ec2-user@${{ env.K8S_IP }} "echo 'SSH Connection Successful'" || {
+            echo "Error: SSH connection failed.";
+            exit 1;
+          }
 

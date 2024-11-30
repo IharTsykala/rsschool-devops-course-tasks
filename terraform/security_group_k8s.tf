@@ -1,17 +1,16 @@
-resource "aws_security_group" "jenkins_security_group" {
-  name        = "jenkins_security_group"
-  description = "Allow access to Jenkins"
-
+resource "aws_security_group" "k8s_security_group" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    from_port   = 8080
-    to_port     = 8080
+    description = "Kubernetes API"
+    from_port   = 6443
+    to_port     = 6443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
+    description = "SSH access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -26,6 +25,6 @@ resource "aws_security_group" "jenkins_security_group" {
   }
 
   tags = {
-    Name = "jenkins_security_group"
+    Name = "k8s-security-group"
   }
 }

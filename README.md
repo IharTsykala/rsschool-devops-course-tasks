@@ -1,215 +1,160 @@
 
-# Terraform AWS Infrastructure Project
+# Kubernetes and Monitoring Deployment Project on AWS EC2
 
-## Task 1: AWS Account Configuration
+## Task: Deploy Kubernetes and Prometheus on AWS EC2 with Automation Script
 
-In this Terraform project, we configure an **S3 bucket** for Terraform state storage and create an IAM role named **GithubActionsRole** with the following policies:
-
-- AmazonEC2FullAccess
-- AmazonRoute53FullAccess
-- AmazonS3FullAccess
-- IAMFullAccess
-- AmazonVPCFullAccess
-- AmazonSQSFullAccess
-- AmazonEventBridgeFullAccess
-
-We also set up an **OpenID Connect provider for GitHub Actions** to authenticate and assume this role.
+In this project, we deploy a Kubernetes cluster on AWS EC2 using kubeadm, set up a monitoring solution with Prometheus, and expose Prometheus using a NodePort service. This guide walks you through the configuration, execution, and verification steps for successful deployment.
 
 ---
 
-### Project File Structure (Task 1)
+### Project File Structure
 
-#### **main.tf**
-Defines the backend configuration for the S3 bucket to store the Terraform state and sets up the AWS provider.
+#### User-Data Script: `kubernetes_prometheus_deploy.sh`
+This script automates the installation and configuration of Kubernetes, Docker, Helm, and Prometheus on an Amazon Linux 2 instance.
 
-#### **iam.tf**
-Creates the IAM role for GitHub Actions and attaches policies for access to AWS services.
-
-#### **variables-aws-acc-configuration.tf**
-Contains all variables for the project, such as the region, bucket name, role name, OIDC provider, and repository.
-
-#### **.github/workflows/deploy.yml**
-Defines the GitHub Actions workflow for deployment using Terraform.
+- **Purpose:** 
+  - Initialize a Kubernetes cluster using `kubeadm`.
+  - Install Docker, Helm, and Kubernetes tools.
+  - Deploy Prometheus in a monitoring namespace.
+  - Configure NodePort to expose Prometheus to external traffic.
 
 ---
 
-## How to Run Task 1
+### How to Run
 
-1. **Install Terraform**  
-   Install Terraform from the [official site](https://www.terraform.io/downloads.html) and verify installation:
+#### Prerequisites
+1. **AWS Account:** Ensure you have an AWS account and appropriate permissions to launch EC2 instances.
+2. **Key Pair:** Create a key pair in AWS to connect to the EC2 instance if needed.
+3. **Security Groups:** Ensure the required ports (e.g., 22, 31000) are open for SSH and Prometheus access.
+4. **IAM Role:** Attach an IAM role with permissions for EC2 and networking tasks to your instance.
 
-   ```bash
-   terraform -v
-   ```
+#### Steps to Execute
 
-2. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-3. **Deploy the configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-4. **Verify the setup**  
-   Ensure that the IAM role and S3 bucket are correctly configured for GitHub Actions.
-
----
-
-## Task 2: Basic Infrastructure Configuration
-
-In this task, we configure a **VPC** with **public and private subnets**, a **NAT instance**, a **Bastion host**, security groups, and route tables to ensure connectivity between the private and public resources. This configuration allows private instances to access the internet via the NAT instance while remaining isolated from public access.
-
----
-
-### Project File Structure (Task 2)
-
-#### **vpc.tf**
-Defines the VPC, subnets, and main networking components.
-
-#### **subnets_private.tf & subnets_public.tf**
-Create public and private subnets within the VPC in separate availability zones.
-
-#### **nat_instance.tf**
-Creates the NAT instance with appropriate security groups and routing to allow internet access from private instances.
-
-#### **bastion_instance.tf**
-Creates the Bastion host in a public subnet to provide SSH access to private instances.
-
-#### **security_group_private_to_bastion.tf**
-Defines the security group to control traffic between the private instance and the Bastion host.
-
-#### **security_group_private_to_nat.tf & security_group_public_from_nat.tf**
-Configure the security groups to manage traffic between the NAT instance, private instances, and the internet.
-
-#### **routes_public.tf**
-Configures route tables for the public subnets, routing traffic through the **Internet Gateway (IGW)**.
-
-#### **routes_private_nat.tf**
-Creates a route table for private subnets, routing traffic through the **NAT instance** for internet access.
-
-#### **nacl_associations_private.tf & nacl_associations_public.tf**
-Associates network ACLs (NACLs) with private and public subnets to manage inbound and outbound traffic.
-
-#### **network_acls_private.tf & network_acls_public.tf**
-Define the private and public NACL rules to control access to and from the subnets.
-
-#### **outputs.tf**
-Provides important outputs such as VPC ID, public IPs, and instance IDs.
-
----
-
-## How to Run Task 2
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify Setup**
-   - Ensure the Bastion host is accessible via SSH.
-   - Verify that private instances can reach the internet through the NAT instance.
-   - Check that route tables, security groups, and NACLs are correctly associated.
-
----
-
-## Task 3: Kubernetes Cluster Deployment and Workload Management
-
-In this task, we deploy a **K3s** Kubernetes cluster on an AWS EC2 instance and manage workloads using `kubectl`. The objective is to create a lightweight Kubernetes cluster and deploy a simple workload (Nginx).
-
----
-
-### Project File Structure (Task 3)
-
-#### **k3s_instance.tf**
-Defines the EC2 instance for deploying the K3s cluster, including user data for installing K3s and deploying an Nginx workload.
-
----
-
-## How to Run Task 3
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify K3s Deployment**
-   - Connect to the EC2 instance running K3s (the Bastion host):
+1. **Launch an EC2 Instance:**
+   - Use Amazon Linux 2 AMI.
+   - Add a script to `User data` during instance configuration:
      ```bash
-     ssh -i ~/.ssh/bastion_key ubuntu@<BASTION_PUBLIC_IP>
+     #!/bin/bash
+     curl -o kubernetes_prometheus_deploy.sh https://example.com/path/to/kubernetes_prometheus_deploy.sh
+     bash kubernetes_prometheus_deploy.sh
+     ```
+2. **Access Logs:**
+   - Check `/var/log/user-data.log` for detailed script execution logs.
+
+3. **Verify Kubernetes Deployment:**
+   - Connect to the EC2 instance:
+     ```bash
+     ssh -i <key.pem> ec2-user@<public-ip>
+     ```
+   - Check the status of the Kubernetes cluster:
+     ```bash
+     kubectl get nodes
      ```
 
-   - From the Bastion host, check the status of the K3s cluster:
+4. **Verify Prometheus Deployment:**
+   - Retrieve the public IP of your EC2 instance and verify Prometheus:
+     - URL: `http://<EC2_PUBLIC_IP>:31000`
+
+---
+
+### Script Breakdown
+
+#### **`kubernetes_prometheus_deploy.sh`**
+
+**Key Features:**
+- **Docker Installation:**
+  - Installs Docker and starts the Docker service.
+  - Ensures Docker is enabled on boot.
+  
+- **Kubernetes Setup:**
+  - Installs `kubeadm`, `kubectl`, and `kubelet`.
+  - Initializes a single-node Kubernetes cluster with `kubeadm`.
+  - Applies Weave Net as the CNI.
+
+- **Helm Installation:**
+  - Installs Helm (v3) for managing Kubernetes applications.
+
+- **Prometheus Deployment:**
+  - Creates a namespace for monitoring.
+  - Deploys Prometheus using Helm from the Bitnami chart repository.
+  - Exposes Prometheus via a NodePort service on port 31000.
+
+- **Logging and Error Handling:**
+  - Logs all actions and errors to `/var/log/user-data.log`.
+
+**Dependencies Installed:**
+- Docker
+- Kubernetes tools (kubeadm, kubectl, kubelet)
+- Helm (v3)
+
+---
+
+### Script Execution Flow
+
+1. **Locale Setup:** Fixes locale-related issues on the EC2 instance.
+2. **System Update:** Updates the system and installs required dependencies.
+3. **Docker Installation:** Installs and configures Docker for Kubernetes.
+4. **Kubernetes Tools Installation:** Installs kubeadm, kubectl, and kubelet.
+5. **Cluster Initialization:** Sets up a Kubernetes cluster using `kubeadm`.
+6. **CNI Configuration:** Installs Weave Net for pod networking.
+7. **Helm Installation:** Installs Helm for Kubernetes application management.
+8. **Prometheus Deployment:**
+   - Creates a namespace (`monitoring`).
+   - Deploys Prometheus using Helm.
+   - Configures NodePort service for external access.
+9. **Logging:** Logs detailed output for debugging and verification.
+
+---
+
+### How to Verify Deployment
+
+1. **Check Cluster Nodes:**
+   - Ensure the Kubernetes cluster is initialized:
      ```bash
-     sudo kubectl get nodes
+     kubectl get nodes
      ```
 
-   - Deploy a simple workload:
+2. **Verify Prometheus Deployment:**
+   - Check that Prometheus pods are running:
      ```bash
-     sudo kubectl apply -f https://k8s.io/examples/pods/simple-pod.yaml
+     kubectl get pods -n monitoring
+     ```
+   - Verify that Prometheus is accessible:
+     - Open `http://<EC2_PUBLIC_IP>:31000` in your browser.
+
+3. **Troubleshooting:**
+   - If the script fails, check logs:
+     ```bash
+     cat /var/log/user-data.log
      ```
 
-   - Verify that the workload is running:
-     ```bash
-     sudo kubectl get pods --all-namespaces
-     ```
+---
 
-4. **Access the Workload**  
-   You can access the Nginx server by using the internal IP of the Kubernetes pod.
+### Cleanup
+
+To clean up all resources:
+1. Terminate the EC2 instance.
+2. Remove any associated resources like security groups, key pairs, or IAM roles.
 
 ---
 
-## Cleanup
+### Summary
 
-To destroy all resources, run the following command:
+This project automates the deployment of Kubernetes and Prometheus on AWS EC2. By leveraging the `kubeadm` and Helm tools, it ensures a streamlined setup process for monitoring workloads. The script provides robust logging for easy debugging and simplifies access to Prometheus with a NodePort service.
 
-```bash
-terraform destroy
-```
-
----
-
-## Outputs Example
-
-The following outputs will be displayed after applying the configuration:
-
-- **VPC ID**: `vpc-12345`
-- **Public Subnet IDs**: `[subnet-abc, subnet-def]`
-- **Bastion Public IP**: `203.0.113.25`
-- **Bastion Instance ID**: `i-09876`
-- **NAT Instance ID**: `i-01234`
-- **Private Instance ID**: `i-56789`
+**Key Benefits:**
+- Automates Kubernetes and Prometheus setup.
+- Provides a lightweight monitoring solution.
+- Simplifies access and configuration.
 
 ---
 
-## Summary
+### Outputs Example
 
-This Terraform project provides a comprehensive infrastructure configuration for AWS. The project ensures that private instances can securely access the internet via a NAT instance and can be managed through a Bastion host. The use of NACLs, security groups, and route tables ensures controlled access to the network and resources. Additionally, it allows for the deployment of a K3s cluster to manage Kubernetes workloads effectively.
-
----
+After the setup, you should see:
+- **Kubernetes Cluster Status:**
+  ```bash
+  NAME    STATUS   ROLES    AGE   VERSION
+  master  Ready    master   5m    v1.26.0
+  ```
+- **Prometheus URL:** `http://<EC2_PUBLIC_IP>:31000`

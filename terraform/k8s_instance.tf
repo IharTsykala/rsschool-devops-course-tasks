@@ -10,7 +10,7 @@ resource "aws_instance" "k8s_instance" {
 
   iam_instance_profile = aws_iam_instance_profile.K8sProfile.name
 
-  user_data = file("./scripts/install_k8s.sh")
+  user_data = file("./scripts/install_k3s.sh")
 
   tags = {
     Name = "k8s_instance"

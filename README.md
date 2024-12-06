@@ -1,160 +1,121 @@
+# Task 8: Grafana Installation and Dashboard Creation
 
-# Kubernetes and Monitoring Deployment Project on AWS EC2
+## Objective
 
-## Task: Deploy Kubernetes and Prometheus on AWS EC2 with Automation Script
-
-In this project, we deploy a Kubernetes cluster on AWS EC2 using kubeadm, set up a monitoring solution with Prometheus, and expose Prometheus using a NodePort service. This guide walks you through the configuration, execution, and verification steps for successful deployment.
-
----
-
-### Project File Structure
-
-#### User-Data Script: `kubernetes_prometheus_deploy.sh`
-This script automates the installation and configuration of Kubernetes, Docker, Helm, and Prometheus on an Amazon Linux 2 instance.
-
-- **Purpose:** 
-  - Initialize a Kubernetes cluster using `kubeadm`.
-  - Install Docker, Helm, and Kubernetes tools.
-  - Deploy Prometheus in a monitoring namespace.
-  - Configure NodePort to expose Prometheus to external traffic.
+In this task, you will install Grafana on your Kubernetes (K8s) cluster using a Helm chart and create a dashboard to visualize Prometheus metrics.
 
 ---
 
-### How to Run
+### Steps to Execute
 
-#### Prerequisites
-1. **AWS Account:** Ensure you have an AWS account and appropriate permissions to launch EC2 instances.
-2. **Key Pair:** Create a key pair in AWS to connect to the EC2 instance if needed.
-3. **Security Groups:** Ensure the required ports (e.g., 22, 31000) are open for SSH and Prometheus access.
-4. **IAM Role:** Attach an IAM role with permissions for EC2 and networking tasks to your instance.
+#### 1. Install Grafana
+- Install Grafana on the Kubernetes cluster using the Helm chart provided by Bitnami:
+  ```bash
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo update
+  helm install grafana bitnami/grafana -n monitoring --create-namespace
+  ```
+- Verify that Grafana is installed and running:
+  ```bash
+  kubectl get pods -n monitoring
+  ```
 
-#### Steps to Execute
+#### 2. Configure Grafana
+- Retrieve the Grafana admin password:
+  ```bash
+  kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+  ```
+- Access Grafana using the default NodePort (or configure an Ingress for external access):
+  - URL: `http://<NODE_IP>:<NODE_PORT>`
+  - Login credentials:
+    - Username: `admin`
+    - Password: `<retrieved password>`
+- Add a Prometheus data source:
+  - Navigate to **Configuration > Data Sources > Add data source**.
+  - Select **Prometheus** and provide the Prometheus URL (e.g., `http://prometheus.monitoring.svc.cluster.local:9090`).
+  - Click **Save & Test**.
 
-1. **Launch an EC2 Instance:**
-   - Use Amazon Linux 2 AMI.
-   - Add a script to `User data` during instance configuration:
-     ```bash
-     #!/bin/bash
-     curl -o kubernetes_prometheus_deploy.sh https://example.com/path/to/kubernetes_prometheus_deploy.sh
-     bash kubernetes_prometheus_deploy.sh
-     ```
-2. **Access Logs:**
-   - Check `/var/log/user-data.log` for detailed script execution logs.
+#### 3. Create a Dashboard
+- Create a new dashboard in Grafana:
+  - Navigate to **Create > Dashboard > Add new panel**.
+  - Add panels for the following metrics:
+    - CPU Utilization: `node_cpu_seconds_total`
+    - Memory Usage: `node_memory_Active_bytes`
+    - Storage Usage: `node_filesystem_avail_bytes`
+  - Save the dashboard with an appropriate name.
+- Export the dashboard to a JSON file:
+  - Navigate to **Share > Export > Save to file**.
 
-3. **Verify Kubernetes Deployment:**
-   - Connect to the EC2 instance:
-     ```bash
-     ssh -i <key.pem> ec2-user@<public-ip>
-     ```
-   - Check the status of the Kubernetes cluster:
-     ```bash
-     kubectl get nodes
-     ```
-
-4. **Verify Prometheus Deployment:**
-   - Retrieve the public IP of your EC2 instance and verify Prometheus:
-     - URL: `http://<EC2_PUBLIC_IP>:31000`
-
----
-
-### Script Breakdown
-
-#### **`kubernetes_prometheus_deploy.sh`**
-
-**Key Features:**
-- **Docker Installation:**
-  - Installs Docker and starts the Docker service.
-  - Ensures Docker is enabled on boot.
-  
-- **Kubernetes Setup:**
-  - Installs `kubeadm`, `kubectl`, and `kubelet`.
-  - Initializes a single-node Kubernetes cluster with `kubeadm`.
-  - Applies Weave Net as the CNI.
-
-- **Helm Installation:**
-  - Installs Helm (v3) for managing Kubernetes applications.
-
-- **Prometheus Deployment:**
-  - Creates a namespace for monitoring.
-  - Deploys Prometheus using Helm from the Bitnami chart repository.
-  - Exposes Prometheus via a NodePort service on port 31000.
-
-- **Logging and Error Handling:**
-  - Logs all actions and errors to `/var/log/user-data.log`.
-
-**Dependencies Installed:**
-- Docker
-- Kubernetes tools (kubeadm, kubectl, kubelet)
-- Helm (v3)
+#### 4. Document the Setup
+- Create a README file (this file) documenting the Grafana deployment and dashboard creation process.
+- Include the JSON file of the dashboard layout.
 
 ---
 
-### Script Execution Flow
+### Outputs
 
-1. **Locale Setup:** Fixes locale-related issues on the EC2 instance.
-2. **System Update:** Updates the system and installs required dependencies.
-3. **Docker Installation:** Installs and configures Docker for Kubernetes.
-4. **Kubernetes Tools Installation:** Installs kubeadm, kubectl, and kubelet.
-5. **Cluster Initialization:** Sets up a Kubernetes cluster using `kubeadm`.
-6. **CNI Configuration:** Installs Weave Net for pod networking.
-7. **Helm Installation:** Installs Helm for Kubernetes application management.
-8. **Prometheus Deployment:**
-   - Creates a namespace (`monitoring`).
-   - Deploys Prometheus using Helm.
-   - Configures NodePort service for external access.
-9. **Logging:** Logs detailed output for debugging and verification.
+#### Verify the Deployment
+1. **Check Grafana Pod Status**:
+   ```bash
+   kubectl get pods -n monitoring
+   ```
 
----
+2. **Prometheus Data Source Configuration**:
+   - Ensure the Prometheus data source is correctly configured in Grafana.
 
-### How to Verify Deployment
+3. **Dashboard Verification**:
+   - Verify that the created dashboard displays metrics such as CPU and memory utilization.
 
-1. **Check Cluster Nodes:**
-   - Ensure the Kubernetes cluster is initialized:
-     ```bash
-     kubectl get nodes
-     ```
-
-2. **Verify Prometheus Deployment:**
-   - Check that Prometheus pods are running:
-     ```bash
-     kubectl get pods -n monitoring
-     ```
-   - Verify that Prometheus is accessible:
-     - Open `http://<EC2_PUBLIC_IP>:31000` in your browser.
-
-3. **Troubleshooting:**
-   - If the script fails, check logs:
-     ```bash
-     cat /var/log/user-data.log
-     ```
+4. **JSON File of Dashboard Layout**:
+   - Ensure the dashboard layout is exported as a JSON file.
 
 ---
 
 ### Cleanup
 
-To clean up all resources:
-1. Terminate the EC2 instance.
-2. Remove any associated resources like security groups, key pairs, or IAM roles.
+To remove Grafana from the cluster:
+1. Uninstall the Helm release:
+   ```bash
+   helm uninstall grafana -n monitoring
+   ```
+2. Delete the monitoring namespace if no other resources exist:
+   ```bash
+   kubectl delete namespace monitoring
+   ```
 
 ---
 
-### Summary
+### Submission Checklist
 
-This project automates the deployment of Kubernetes and Prometheus on AWS EC2. By leveraging the `kubeadm` and Helm tools, it ensures a streamlined setup process for monitoring workloads. The script provides robust logging for easy debugging and simplifies access to Prometheus with a NodePort service.
-
-**Key Benefits:**
-- Automates Kubernetes and Prometheus setup.
-- Provides a lightweight monitoring solution.
-- Simplifies access and configuration.
+1. Provide a PR with the automation script or CI/CD pipeline for Grafana deployment.
+2. Attach the output of `kubectl get pods -n monitoring` with Grafana running.
+3. Include screenshots of:
+   - Prometheus data source configuration.
+   - Created dashboard.
+4. Provide the exported JSON file of the dashboard layout.
+5. Include a README file (this file) documenting the Grafana deployment and dashboard setup.
 
 ---
 
-### Outputs Example
+### References
 
-After the setup, you should see:
-- **Kubernetes Cluster Status:**
-  ```bash
-  NAME    STATUS   ROLES    AGE   VERSION
-  master  Ready    master   5m    v1.26.0
-  ```
-- **Prometheus URL:** `http://<EC2_PUBLIC_IP>:31000`
+- [Grafana Documentation](https://grafana.com/docs/)
+- [Helm Chart for Grafana](https://github.com/bitnami/charts/tree/main/bitnami/grafana)
+- [Understanding Machine CPU Usage](https://www.robustperception.io/understanding-machine-cpu-usage/)
+
+---
+
+### Example Outputs
+
+1. **Pods in Monitoring Namespace**:
+   ```bash
+   NAME                         READY   STATUS    RESTARTS   AGE
+   grafana-xxxxxxxxxx-xxxxx     1/1     Running   0          10m
+   ```
+
+2. **Dashboard Export JSON File**:
+   - Example JSON content is saved in a separate file.
+3. **Access Grafana**:
+   - URL: `http://<NODE_IP>:<NODE_PORT>`
+   - Username: `admin`
+   - Password: `<retrieved password>`

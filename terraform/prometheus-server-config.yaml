@@ -1,61 +1,26 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-server
-  namespace: monitoring
-data:
-  prometheus.yaml: |
-    global:
-      scrape_interval: 15s
-      external_labels:
-        monitor: prometheus
-    scrape_configs:
-      - job_name: prometheus
-        kubernetes_sd_configs:
-          - role: endpoints
-            namespaces:
-              names:
-                - monitoring
-        metrics_path: /metrics
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_component]
-            regex: (server)
-            action: keep
-          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
-            regex: (prometheus)
-            action: keep
-          - source_labels: [__meta_kubernetes_endpoint_port_name]
-            regex: http
-            action: keep
-      - job_name: alertmanager
-        kubernetes_sd_configs:
-          - role: endpoints
-            namespaces:
-              names:
-                - monitoring
-        metrics_path: /metrics
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_component]
-            regex: (alertmanager)
-            action: keep
-          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
-            regex: (prometheus)
-            action: keep
-          - source_labels: [__meta_kubernetes_endpoint_port_name]
-            regex: http
-            action: keep
-      - job_name: node-exporter
-        static_configs:
-          - targets:
-              - 'node-exporter.monitoring.svc.cluster.local:9100'
-      - job_name: kube-state-metrics
-        static_configs:
-          - targets:
-              - 'kube-state-metrics.monitoring.svc.cluster.local:8080'
-    alerting:
-      alertmanagers:
-        - scheme: HTTP
-          static_configs:
-            - targets: [ "prometheus-alertmanager.monitoring.svc.cluster.local:80" ]
-    rule_files:
-      - rules.yaml
+apiVersion: 1
+
+alertRules:
+  - name: HighCPUUtilization
+    folder: "task9"
+    interval: 1m
+    rules:
+      - expr: (sum(rate(node_cpu_seconds_total[5m])) by (instance)) / count(node_cpu_seconds_total{mode="idle"} by (instance)) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU utilization detected on {{ $labels.instance }}"
+          description: "CPU usage has exceeded 90% for more than 2 minutes on instance {{ $labels.instance }}."
+
+  - name: LowRAM
+    folder: "task9"
+    interval: 1m
+    rules:
+      - expr: (sum(node_memory_MemAvailable_bytes{job="node-exporter"})) / sum(node_memory_MemTotal_bytes{job="node-exporter"}) < 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low RAM capacity detected on {{ $labels.instance }}"
+          description: "Available memory is less than 10% on instance {{ $labels.instance }}."

@@ -1,215 +1,121 @@
+# Task 8: Grafana Installation and Dashboard Creation
 
-# Terraform AWS Infrastructure Project
+## Objective
 
-## Task 1: AWS Account Configuration
-
-In this Terraform project, we configure an **S3 bucket** for Terraform state storage and create an IAM role named **GithubActionsRole** with the following policies:
-
-- AmazonEC2FullAccess
-- AmazonRoute53FullAccess
-- AmazonS3FullAccess
-- IAMFullAccess
-- AmazonVPCFullAccess
-- AmazonSQSFullAccess
-- AmazonEventBridgeFullAccess
-
-We also set up an **OpenID Connect provider for GitHub Actions** to authenticate and assume this role.
+In this task, you will install Grafana on your Kubernetes (K8s) cluster using a Helm chart and create a dashboard to visualize Prometheus metrics.
 
 ---
 
-### Project File Structure (Task 1)
+### Steps to Execute
 
-#### **main.tf**
-Defines the backend configuration for the S3 bucket to store the Terraform state and sets up the AWS provider.
+#### 1. Install Grafana
+- Install Grafana on the Kubernetes cluster using the Helm chart provided by Bitnami:
+  ```bash
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo update
+  helm install grafana bitnami/grafana -n monitoring --create-namespace
+  ```
+- Verify that Grafana is installed and running:
+  ```bash
+  kubectl get pods -n monitoring
+  ```
 
-#### **iam.tf**
-Creates the IAM role for GitHub Actions and attaches policies for access to AWS services.
+#### 2. Configure Grafana
+- Retrieve the Grafana admin password:
+  ```bash
+  kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+  ```
+- Access Grafana using the default NodePort (or configure an Ingress for external access):
+  - URL: `http://<NODE_IP>:<NODE_PORT>`
+  - Login credentials:
+    - Username: `admin`
+    - Password: `<retrieved password>`
+- Add a Prometheus data source:
+  - Navigate to **Configuration > Data Sources > Add data source**.
+  - Select **Prometheus** and provide the Prometheus URL (e.g., `http://prometheus.monitoring.svc.cluster.local:9090`).
+  - Click **Save & Test**.
 
-#### **variables-aws-acc-configuration.tf**
-Contains all variables for the project, such as the region, bucket name, role name, OIDC provider, and repository.
+#### 3. Create a Dashboard
+- Create a new dashboard in Grafana:
+  - Navigate to **Create > Dashboard > Add new panel**.
+  - Add panels for the following metrics:
+    - CPU Utilization: `node_cpu_seconds_total`
+    - Memory Usage: `node_memory_Active_bytes`
+    - Storage Usage: `node_filesystem_avail_bytes`
+  - Save the dashboard with an appropriate name.
+- Export the dashboard to a JSON file:
+  - Navigate to **Share > Export > Save to file**.
 
-#### **.github/workflows/deploy.yml**
-Defines the GitHub Actions workflow for deployment using Terraform.
+#### 4. Document the Setup
+- Create a README file (this file) documenting the Grafana deployment and dashboard creation process.
+- Include the JSON file of the dashboard layout.
 
 ---
 
-## How to Run Task 1
+### Outputs
 
-1. **Install Terraform**  
-   Install Terraform from the [official site](https://www.terraform.io/downloads.html) and verify installation:
-
+#### Verify the Deployment
+1. **Check Grafana Pod Status**:
    ```bash
-   terraform -v
+   kubectl get pods -n monitoring
    ```
 
-2. **Initialize Terraform**  
-   Run the following command to initialize the project:
+2. **Prometheus Data Source Configuration**:
+   - Ensure the Prometheus data source is correctly configured in Grafana.
 
+3. **Dashboard Verification**:
+   - Verify that the created dashboard displays metrics such as CPU and memory utilization.
+
+4. **JSON File of Dashboard Layout**:
+   - Ensure the dashboard layout is exported as a JSON file.
+
+---
+
+### Cleanup
+
+To remove Grafana from the cluster:
+1. Uninstall the Helm release:
    ```bash
-   terraform init
+   helm uninstall grafana -n monitoring
+   ```
+2. Delete the monitoring namespace if no other resources exist:
+   ```bash
+   kubectl delete namespace monitoring
    ```
 
-3. **Deploy the configuration**  
-   Use the following commands to plan and apply the infrastructure:
+---
 
+### Submission Checklist
+
+1. Provide a PR with the automation script or CI/CD pipeline for Grafana deployment.
+2. Attach the output of `kubectl get pods -n monitoring` with Grafana running.
+3. Include screenshots of:
+   - Prometheus data source configuration.
+   - Created dashboard.
+4. Provide the exported JSON file of the dashboard layout.
+5. Include a README file (this file) documenting the Grafana deployment and dashboard setup.
+
+---
+
+### References
+
+- [Grafana Documentation](https://grafana.com/docs/)
+- [Helm Chart for Grafana](https://github.com/bitnami/charts/tree/main/bitnami/grafana)
+- [Understanding Machine CPU Usage](https://www.robustperception.io/understanding-machine-cpu-usage/)
+
+---
+
+### Example Outputs
+
+1. **Pods in Monitoring Namespace**:
    ```bash
-   terraform plan
-   terraform apply
+   NAME                         READY   STATUS    RESTARTS   AGE
+   grafana-xxxxxxxxxx-xxxxx     1/1     Running   0          10m
    ```
 
-4. **Verify the setup**  
-   Ensure that the IAM role and S3 bucket are correctly configured for GitHub Actions.
-
----
-
-## Task 2: Basic Infrastructure Configuration
-
-In this task, we configure a **VPC** with **public and private subnets**, a **NAT instance**, a **Bastion host**, security groups, and route tables to ensure connectivity between the private and public resources. This configuration allows private instances to access the internet via the NAT instance while remaining isolated from public access.
-
----
-
-### Project File Structure (Task 2)
-
-#### **vpc.tf**
-Defines the VPC, subnets, and main networking components.
-
-#### **subnets_private.tf & subnets_public.tf**
-Create public and private subnets within the VPC in separate availability zones.
-
-#### **nat_instance.tf**
-Creates the NAT instance with appropriate security groups and routing to allow internet access from private instances.
-
-#### **bastion_instance.tf**
-Creates the Bastion host in a public subnet to provide SSH access to private instances.
-
-#### **security_group_private_to_bastion.tf**
-Defines the security group to control traffic between the private instance and the Bastion host.
-
-#### **security_group_private_to_nat.tf & security_group_public_from_nat.tf**
-Configure the security groups to manage traffic between the NAT instance, private instances, and the internet.
-
-#### **routes_public.tf**
-Configures route tables for the public subnets, routing traffic through the **Internet Gateway (IGW)**.
-
-#### **routes_private_nat.tf**
-Creates a route table for private subnets, routing traffic through the **NAT instance** for internet access.
-
-#### **nacl_associations_private.tf & nacl_associations_public.tf**
-Associates network ACLs (NACLs) with private and public subnets to manage inbound and outbound traffic.
-
-#### **network_acls_private.tf & network_acls_public.tf**
-Define the private and public NACL rules to control access to and from the subnets.
-
-#### **outputs.tf**
-Provides important outputs such as VPC ID, public IPs, and instance IDs.
-
----
-
-## How to Run Task 2
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify Setup**
-   - Ensure the Bastion host is accessible via SSH.
-   - Verify that private instances can reach the internet through the NAT instance.
-   - Check that route tables, security groups, and NACLs are correctly associated.
-
----
-
-## Task 3: Kubernetes Cluster Deployment and Workload Management
-
-In this task, we deploy a **K3s** Kubernetes cluster on an AWS EC2 instance and manage workloads using `kubectl`. The objective is to create a lightweight Kubernetes cluster and deploy a simple workload (Nginx).
-
----
-
-### Project File Structure (Task 3)
-
-#### **k3s_instance.tf**
-Defines the EC2 instance for deploying the K3s cluster, including user data for installing K3s and deploying an Nginx workload.
-
----
-
-## How to Run Task 3
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify K3s Deployment**
-   - Connect to the EC2 instance running K3s (the Bastion host):
-     ```bash
-     ssh -i ~/.ssh/bastion_key ubuntu@<BASTION_PUBLIC_IP>
-     ```
-
-   - From the Bastion host, check the status of the K3s cluster:
-     ```bash
-     sudo kubectl get nodes
-     ```
-
-   - Deploy a simple workload:
-     ```bash
-     sudo kubectl apply -f https://k8s.io/examples/pods/simple-pod.yaml
-     ```
-
-   - Verify that the workload is running:
-     ```bash
-     sudo kubectl get pods --all-namespaces
-     ```
-
-4. **Access the Workload**  
-   You can access the Nginx server by using the internal IP of the Kubernetes pod.
-
----
-
-## Cleanup
-
-To destroy all resources, run the following command:
-
-```bash
-terraform destroy
-```
-
----
-
-## Outputs Example
-
-The following outputs will be displayed after applying the configuration:
-
-- **VPC ID**: `vpc-12345`
-- **Public Subnet IDs**: `[subnet-abc, subnet-def]`
-- **Bastion Public IP**: `203.0.113.25`
-- **Bastion Instance ID**: `i-09876`
-- **NAT Instance ID**: `i-01234`
-- **Private Instance ID**: `i-56789`
-
----
-
-## Summary
-
-This Terraform project provides a comprehensive infrastructure configuration for AWS. The project ensures that private instances can securely access the internet via a NAT instance and can be managed through a Bastion host. The use of NACLs, security groups, and route tables ensures controlled access to the network and resources. Additionally, it allows for the deployment of a K3s cluster to manage Kubernetes workloads effectively.
-
----
+2. **Dashboard Export JSON File**:
+   - Example JSON content is saved in a separate file.
+3. **Access Grafana**:
+   - URL: `http://<NODE_IP>:<NODE_PORT>`
+   - Username: `admin`
+   - Password: `<retrieved password>`

@@ -1,61 +1,107 @@
-name: Terraform Deployment
-
-permissions:
-  id-token: write
-  contents: read
+name: Deploy Infrastructure and check helm and prometheus
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - task-8/grafana-installation-and-dashboard-creation
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: eu-central-1
 
 jobs:
-  terraform-check:
+#  check:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#
+#      - name: Set up Terraform
+#        uses: hashicorp/setup-terraform@v2
+#        with:
+#          terraform_version: 1.9.5
+#
+#      - name: Initialize Terraform
+#        working-directory: ./terraform
+#        run: terraform init
+#
+#      - name: Check Terraform Format
+#        working-directory: ./terraform
+#        run: terraform fmt -check
+#
+#  validate:
+#    runs-on: ubuntu-latest
+#    needs: check
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#
+#      - name: Set up Terraform
+#        uses: hashicorp/setup-terraform@v2
+#        with:
+#          terraform_version: 1.9.5
+#
+#      - name: Initialize Terraform
+#        working-directory: ./terraform
+#        run: terraform init
+#
+#      - name: Validate Terraform
+#        working-directory: ./terraform
+#        run: terraform validate
+#
+#  plan:
+#    runs-on: ubuntu-latest
+#    needs: validate
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#
+#      - name: Set up Terraform
+#        uses: hashicorp/setup-terraform@v2
+#        with:
+#          terraform_version: 1.9.5
+#
+#      - name: Initialize Terraform
+#        working-directory: ./terraform
+#        run: terraform init
+#
+#      - name: Generate Terraform Plan
+#        working-directory: ./terraform
+#        run: terraform plan -out=tfplan
+#
+#      - name: Show Terraform Plan
+#        working-directory: ./terraform
+#        run: terraform show -json tfplan > tfplan.json
+#
+#      - name: Upload Plan File
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: terraform-plan
+#          path: ./terraform/tfplan.json
+
+  deploy:
     runs-on: ubuntu-latest
+#    needs: plan
     steps:
-      - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Add SSH Private Key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > terraform/key_pair.pem
+          chmod 600 terraform/key_pair.pem
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.9.5
-      - name: Format Code
-        run: terraform fmt -check
+          terraform_wrapper: false
 
-  terraform-plan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.11
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
-      - name: Terraform Init
+      - name: Initialize Terraform
+        working-directory: ./terraform
         run: terraform init
-      - name: Terraform Plan
-        run: terraform plan
 
-  terraform-apply:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.9.5
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
-      - name: Terraform Init
-        run: terraform init
-      - name: Terraform Apply
+      - name: Apply Terraform
+        working-directory: ./terraform
         run: terraform apply -auto-approve

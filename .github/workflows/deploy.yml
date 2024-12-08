@@ -3,7 +3,7 @@ name: Deploy Infrastructure and check helm and prometheus
 on:
   push:
     branches:
-      - task-8/grafana-installation-and-dashboard-creation
+      - task-9/alertmanager-configuration-and-verification
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

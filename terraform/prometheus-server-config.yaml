@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-server
+  namespace: monitoring
+data:
+  prometheus.yaml: |
+    global:
+      scrape_interval: 15s
+      external_labels:
+        monitor: prometheus
+    scrape_configs:
+      - job_name: prometheus
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - monitoring
+        metrics_path: /metrics
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_component]
+            regex: (server)
+            action: keep
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+            regex: (prometheus)
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            regex: http
+            action: keep
+      - job_name: alertmanager
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - monitoring
+        metrics_path: /metrics
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_component]
+            regex: (alertmanager)
+            action: keep
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+            regex: (prometheus)
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            regex: http
+            action: keep
+      - job_name: node-exporter
+        static_configs:
+          - targets:
+              - 'node-exporter.monitoring.svc.cluster.local:9100'
+      - job_name: kube-state-metrics
+        static_configs:
+          - targets:
+              - 'kube-state-metrics.monitoring.svc.cluster.local:8080'
+    alerting:
+      alertmanagers:
+        - scheme: HTTP
+          static_configs:
+            - targets: [ "prometheus-alertmanager.monitoring.svc.cluster.local:80" ]
+    rule_files:
+      - rules.yaml

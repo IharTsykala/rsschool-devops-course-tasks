@@ -1,10 +1,10 @@
 .idea/
-.terraform/
+terraform/.terraform/
 
-.terraform.lock.hcl
+terraform/.terraform.lock.hcl
 
 cert.pem
-key_pair.pem
+terraform/key_pair.pem
 
 traefik-rbac.yaml
 get_helm.sh

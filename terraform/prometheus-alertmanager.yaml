@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'ldapexample23@gmail.com'
+      smtp_auth_username: 'ldapexample23@gmail.com'
+      smtp_auth_password: ''
+      smtp_require_tls: true
+
+    route:
+      receiver: 'email-alert'
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 3h
+
+    receivers:
+      - name: 'email-alert'
+        email_configs:
+          - to: 'ldapexample23@gmail.com'
+
+    inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname']

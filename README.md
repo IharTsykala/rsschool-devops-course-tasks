@@ -1,215 +1,168 @@
 
-# Terraform AWS Infrastructure Project
+# Task 9: Grafana Alerting Configuration and Verification
 
-## Task 1: AWS Account Configuration
+## Objective
 
-In this Terraform project, we configure an **S3 bucket** for Terraform state storage and create an IAM role named **GithubActionsRole** with the following policies:
-
-- AmazonEC2FullAccess
-- AmazonRoute53FullAccess
-- AmazonS3FullAccess
-- IAMFullAccess
-- AmazonVPCFullAccess
-- AmazonSQSFullAccess
-- AmazonEventBridgeFullAccess
-
-We also set up an **OpenID Connect provider for GitHub Actions** to authenticate and assume this role.
+In this task, we configure Grafana Alerting to send email notifications for specific events in a Kubernetes (K8s) cluster and verify that alerts are received.
 
 ---
 
-### Project File Structure (Task 1)
+## Steps to Execute
 
-#### **main.tf**
-Defines the backend configuration for the S3 bucket to store the Terraform state and sets up the AWS provider.
+### 1. Configure SMTP for Grafana
 
-#### **iam.tf**
-Creates the IAM role for GitHub Actions and attaches policies for access to AWS services.
-
-#### **variables-aws-acc-configuration.tf**
-Contains all variables for the project, such as the region, bucket name, role name, OIDC provider, and repository.
-
-#### **.github/workflows/deploy.yml**
-Defines the GitHub Actions workflow for deployment using Terraform.
-
----
-
-## How to Run Task 1
-
-1. **Install Terraform**  
-   Install Terraform from the [official site](https://www.terraform.io/downloads.html) and verify installation:
-
-   ```bash
-   terraform -v
-   ```
-
-2. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-3. **Deploy the configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-4. **Verify the setup**  
-   Ensure that the IAM role and S3 bucket are correctly configured for GitHub Actions.
-
----
-
-## Task 2: Basic Infrastructure Configuration
-
-In this task, we configure a **VPC** with **public and private subnets**, a **NAT instance**, a **Bastion host**, security groups, and route tables to ensure connectivity between the private and public resources. This configuration allows private instances to access the internet via the NAT instance while remaining isolated from public access.
-
----
-
-### Project File Structure (Task 2)
-
-#### **vpc.tf**
-Defines the VPC, subnets, and main networking components.
-
-#### **subnets_private.tf & subnets_public.tf**
-Create public and private subnets within the VPC in separate availability zones.
-
-#### **nat_instance.tf**
-Creates the NAT instance with appropriate security groups and routing to allow internet access from private instances.
-
-#### **bastion_instance.tf**
-Creates the Bastion host in a public subnet to provide SSH access to private instances.
-
-#### **security_group_private_to_bastion.tf**
-Defines the security group to control traffic between the private instance and the Bastion host.
-
-#### **security_group_private_to_nat.tf & security_group_public_from_nat.tf**
-Configure the security groups to manage traffic between the NAT instance, private instances, and the internet.
-
-#### **routes_public.tf**
-Configures route tables for the public subnets, routing traffic through the **Internet Gateway (IGW)**.
-
-#### **routes_private_nat.tf**
-Creates a route table for private subnets, routing traffic through the **NAT instance** for internet access.
-
-#### **nacl_associations_private.tf & nacl_associations_public.tf**
-Associates network ACLs (NACLs) with private and public subnets to manage inbound and outbound traffic.
-
-#### **network_acls_private.tf & network_acls_public.tf**
-Define the private and public NACL rules to control access to and from the subnets.
-
-#### **outputs.tf**
-Provides important outputs such as VPC ID, public IPs, and instance IDs.
-
----
-
-## How to Run Task 2
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify Setup**
-   - Ensure the Bastion host is accessible via SSH.
-   - Verify that private instances can reach the internet through the NAT instance.
-   - Check that route tables, security groups, and NACLs are correctly associated.
-
----
-
-## Task 3: Kubernetes Cluster Deployment and Workload Management
-
-In this task, we deploy a **K3s** Kubernetes cluster on an AWS EC2 instance and manage workloads using `kubectl`. The objective is to create a lightweight Kubernetes cluster and deploy a simple workload (Nginx).
-
----
-
-### Project File Structure (Task 3)
-
-#### **k3s_instance.tf**
-Defines the EC2 instance for deploying the K3s cluster, including user data for installing K3s and deploying an Nginx workload.
-
----
-
-## How to Run Task 3
-
-1. **Initialize Terraform**  
-   Run the following command to initialize the project:
-
-   ```bash
-   terraform init
-   ```
-
-2. **Plan and Apply Configuration**  
-   Use the following commands to plan and apply the infrastructure:
-
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-3. **Verify K3s Deployment**
-   - Connect to the EC2 instance running K3s (the Bastion host):
-     ```bash
-     ssh -i ~/.ssh/bastion_key ubuntu@<BASTION_PUBLIC_IP>
+1. Update the Grafana configuration to enable SMTP email notifications:
+   - Modify the SMTP settings in the `values.yaml` file for Grafana (if using Helm) or directly configure the SMTP settings in the `grafana.ini` file for local setups.
+   - Example SMTP configuration for a local setup:
+     ```ini
+     [smtp]
+     enabled = true
+     host = "smtp.example.com:587"
+     user = "your-email@example.com"
+     password = "your-password"
+     from_address = "your-email@example.com"
+     from_name = "Grafana Alerts"
+     skip_verify = true
      ```
 
-   - From the Bastion host, check the status of the K3s cluster:
+2. Apply the updated configuration:
+   ```bash
+   helm upgrade grafana bitnami/grafana -n monitoring -f values.yaml
+   ```
+
+3. Verify the SMTP configuration:
+   - Navigate to **Alerting > Notification Channels** in Grafana.
+   - Send a test email to ensure SMTP is configured correctly.
+
+---
+
+### 2. Configure Contact Points
+
+1. Add a new contact point in Grafana for email notifications:
+   - Navigate to **Alerting > Contact Points**.
+   - Click **New Contact Point** and configure it as follows:
+     - **Name**: `email-contact`
+     - **Type**: Email
+     - **Addresses**: `ldapexample23@gmail.com`
+     - **Subject**: `[{{ .CommonLabels.alertname }}] Alert from Grafana`
+   - Save the contact point.
+
+2. Test the contact point:
+   - Send a test notification to confirm it is working.
+
+---
+
+### 3. Configure Alert Rules
+
+1. Create alert rules for the following conditions:
+   - **High CPU Utilization**:
+     - Query:
+       ```promql
+       (sum(rate(node_cpu_seconds_total[5m])) by (instance)) / count(node_cpu_seconds_total{mode="idle"}) by (instance) > 0.9
+       ```
+   - **Low RAM Capacity**:
+     - Query:
+       ```promql
+       (sum(node_memory_MemAvailable_bytes{job="node-exporter"})) / sum(node_memory_MemTotal_bytes{job="node-exporter"}) < 0.1
+       ```
+
+2. Steps to create an alert rule:
+   - Navigate to **Alerting > Alert Rules** in Grafana.
+   - Click **New Alert Rule**.
+   - Configure the alert query, threshold, and evaluation time.
+   - Link the rule to the contact point created earlier.
+
+3. Save the rules with appropriate names:
+   - `HighCPUUtilization`
+   - `LowRAM`
+
+---
+
+### 4. Verify Alerts
+
+1. Simulate high CPU utilization:
+   - Use the `stress` tool to create CPU load on a Kubernetes node:
      ```bash
-     sudo kubectl get nodes
+     sudo apt install stress
+     stress --cpu 2 --timeout 300
      ```
 
-   - Deploy a simple workload:
+2. Simulate low RAM capacity:
+   - Use `stress` or similar tools to allocate memory:
      ```bash
-     sudo kubectl apply -f https://k8s.io/examples/pods/simple-pod.yaml
+     stress --vm 2 --vm-bytes 128M --timeout 300
      ```
 
-   - Verify that the workload is running:
-     ```bash
-     sudo kubectl get pods --all-namespaces
-     ```
+3. Verify alert behavior:
+   - Ensure alerts are triggered and received in your email.
 
-4. **Access the Workload**  
-   You can access the Nginx server by using the internal IP of the Kubernetes pod.
+---
+
+## Outputs
+
+### Verify Configuration and Alerts
+
+1. **SMTP Configuration**:
+   - Test emails sent from Grafana are received.
+
+2. **Alert Rules**:
+   - Alerts for high CPU utilization and low RAM are firing when conditions are met.
+
+3. **Email Notifications**:
+   - Emails are received with the expected alert details.
+
+### JSON Export of Alert Rules
+
+1. Export the alert rules configuration:
+   - Navigate to **Alerting > Export Rules** in Grafana.
+   - Save the configuration as a JSON file.
 
 ---
 
 ## Cleanup
 
-To destroy all resources, run the following command:
-
-```bash
-terraform destroy
-```
-
----
-
-## Outputs Example
-
-The following outputs will be displayed after applying the configuration:
-
-- **VPC ID**: `vpc-12345`
-- **Public Subnet IDs**: `[subnet-abc, subnet-def]`
-- **Bastion Public IP**: `203.0.113.25`
-- **Bastion Instance ID**: `i-09876`
-- **NAT Instance ID**: `i-01234`
-- **Private Instance ID**: `i-56789`
+1. Remove created alert rules and contact points in Grafana if no longer needed.
+2. Uninstall the Grafana Helm release:
+   ```bash
+   helm uninstall grafana -n monitoring
+   ```
 
 ---
 
-## Summary
+## Submission Checklist
 
-This Terraform project provides a comprehensive infrastructure configuration for AWS. The project ensures that private instances can securely access the internet via a NAT instance and can be managed through a Bastion host. The use of NACLs, security groups, and route tables ensures controlled access to the network and resources. Additionally, it allows for the deployment of a K3s cluster to manage Kubernetes workloads effectively.
+1. Provide a PR with configuration files or automation scripts for:
+   - Grafana SMTP configuration.
+   - Alert Rules (exported JSON).
+   - Contact Points (exported JSON).
+2. Include screenshots of:
+   - Contact Points configuration.
+   - Alert Rules in normal and firing states.
+   - Received alert emails.
+3. Include this README documenting the setup process.
 
 ---
+
+### References
+
+- [Grafana Documentation](https://grafana.com/docs/)
+- [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/)
+- [stress Command Documentation](https://linux.die.net/man/1/stress)
+
+---
+
+### Example Outputs
+
+1. **Alert Email Example**:
+   ```
+   Subject: [HighCPUUtilization] Alert from Grafana
+
+   Instance: node-exporter-prometheus-node-exporter.monitoring.svc.cluster.local:9100
+   Status: Firing
+   ```
+
+2. **Pods in Monitoring Namespace**:
+   ```bash
+   NAME                         READY   STATUS    RESTARTS   AGE
+   grafana-xxxxxxxxxx-xxxxx     1/1     Running   0          10m
+   ```

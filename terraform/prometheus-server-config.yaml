@@ -1,0 +1,26 @@
+apiVersion: 1
+
+alertRules:
+  - name: HighCPUUtilization
+    folder: "task9"
+    interval: 1m
+    rules:
+      - expr: (sum(rate(node_cpu_seconds_total[5m])) by (instance)) / count(node_cpu_seconds_total{mode="idle"} by (instance)) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU utilization detected on {{ $labels.instance }}"
+          description: "CPU usage has exceeded 90% for more than 2 minutes on instance {{ $labels.instance }}."
+
+  - name: LowRAM
+    folder: "task9"
+    interval: 1m
+    rules:
+      - expr: (sum(node_memory_MemAvailable_bytes{job="node-exporter"})) / sum(node_memory_MemTotal_bytes{job="node-exporter"}) < 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low RAM capacity detected on {{ $labels.instance }}"
+          description: "Available memory is less than 10% on instance {{ $labels.instance }}."

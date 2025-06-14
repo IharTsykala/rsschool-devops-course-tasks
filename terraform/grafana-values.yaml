@@ -1,0 +1,21 @@
+smtp:
+  enabled: true
+  host: smtp.gmail.com:587
+  user: ldapexample23@gmail.com
+  password: ****
+  skipVerify: true
+  fromAddress: ldapexample23@gmail.com
+
+env:
+  - name: GF_SMTP_ENABLED
+    value: "true"
+  - name: GF_SMTP_HOST
+    value: "smtp.gmail.com:587"
+  - name: GF_SMTP_USER
+    value: "ldapexample23@gmail.com"
+  - name: GF_SMTP_PASSWORD
+    value: ""
+  - name: GF_SMTP_SKIP_VERIFY
+    value: "true"
+  - name: GF_SMTP_FROM_ADDRESS
+    value: "ldapexample23@gmail.com"

@@ -1,0 +1,20 @@
+groups:
+  - name: node-alerts
+    rules:
+      - alert: HighCPUUtilization
+        expr: (sum(rate(container_cpu_usage_seconds_total{job="kubelet", cluster="my-cluster"}[5m])) by (instance)) / (sum(container_spec_cpu_quota{job="kubelet", cluster="my-cluster"}) by (instance)) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU utilization on {{ $labels.instance }}"
+          description: "CPU usage has been greater than 90% for more than 5 minutes on instance {{ $labels.instance }}."
+
+      - alert: LowRAM
+        expr: (sum(container_memory_usage_bytes{job="kubelet", cluster="my-cluster"}) by (instance)) / (sum(container_spec_memory_limit_bytes{job="kubelet", cluster="my-cluster"}) by (instance)) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low RAM capacity on {{ $labels.instance }}"
+          description: "Memory usage is less than 10% of the available capacity on instance {{ $labels.instance }}."

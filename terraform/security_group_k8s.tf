@@ -1,4 +1,4 @@
-resource "aws_security_group" "k3s_security_group" {
+resource "aws_security_group" "k8s_security_group" {
   vpc_id = aws_vpc.main.id
 
   ingress {
@@ -17,6 +17,22 @@ resource "aws_security_group" "k3s_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Kubernetes API"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Kubernetes API"
+    from_port   = 31000
+    to_port     = 31000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -25,6 +41,6 @@ resource "aws_security_group" "k3s_security_group" {
   }
 
   tags = {
-    Name = "k3s-security-group"
+    Name = "k8s-security-group"
   }
 }
